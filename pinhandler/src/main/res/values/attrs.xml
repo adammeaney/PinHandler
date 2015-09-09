@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="PinView">
+        <!-- The number of digits in the pin -->
+        <attr name="numDigits" format="integer" />
+        <!-- Digit dimensions, default 50dp x 50dp -->
+        <attr name="digitWidth" format="dimension" />
+        <attr name="digitHeight" format="dimension" />
+        <!-- Spacing between the pin boxes, default 20dp -->
+        <attr name="digitSpacing" format="dimension" />
+        <!-- Digit background, colour or drawable -->
+        <attr name="digitBackgroundColor" format="reference|color" />
+        <!-- Digit border, color -->
+        <attr name="digitBorderColor" format="color" />
+        <!-- Font size to use for the mask text, default 15sp -->
+        <attr name="digitTextSize" format="dimension" />
+        <!-- Colour of the mask text, defaults to theme textColorPrimary -->
+        <attr name="digitTextColor" format="color" />
+        <!-- Digit elevation (API 21+ only), default 0dp -->
+        <attr name="digitElevation" format="dimension" />
+        <!-- The character to use to mask the input -->
+        <attr name="mask" format="string" />
+        <!-- Accent color, defaults to theme colorAccent -->
+        <attr name="digitAccentColor" format="color" />
+        <!-- Accent width, default 2dp -->
+        <attr name="accentHeight" format="dimension" />
+        <!-- Accent type, default 'character' -->
+        <attr name="accentType" format="enum">
+            <enum name="none" value="0" />
+            <enum name="all" value="1" />
+            <enum name="character" value="2" />
+        </attr>
+    </declare-styleable>
+</resources>
