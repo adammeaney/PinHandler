@@ -12,6 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        app:digitBorderColor="@android:color/white" />
+        app:digitBorderColor="@android:color/white"
+        app:numDigits="8"/>
 
 </ScrollView>

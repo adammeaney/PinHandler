@@ -204,13 +204,14 @@ public class PinView extends HorizontalScrollView
 
         // Add an "invisible" edit text to handle input
         _pinInputField = new EditText(context);
-        _pinInputField.setTextSize(1);
+        _pinInputField.setTextSize(0);
         _pinInputField.setBackgroundColor(resources.getColor(android.R.color.transparent));
         _pinInputField.setTextColor(resources.getColor(android.R.color.transparent));
         _pinInputField.setCursorVisible(false);
         _pinInputField.setFilters(new InputFilter[] {new InputFilter.LengthFilter(_numDigits)});
         _pinInputField.setInputType(InputType.TYPE_CLASS_NUMBER);
         _pinInputField.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        _pinInputField.setMovementMethod(null);
         _pinInputField.setOnFocusChangeListener(new OnFocusChangeListener()
         {
             @Override
@@ -222,7 +223,7 @@ public class PinView extends HorizontalScrollView
 
                 for (int i = 0; i < _numDigits; i++)
                 {
-                    View view = linearLayout.getChildAt(i);
+                    View view = linearLayout.getChildAt(i + 1);
                     if (view == null)
                     {
                         break;
@@ -241,7 +242,7 @@ public class PinView extends HorizontalScrollView
             }
         });
         _pinInputField.addTextChangedListener(new PinWatcher());
-        layout.addView(_pinInputField);
+        layout.addView(_pinInputField, 0);
     }
 
     public void setOnPinFinishedListener(OnPinFinishedListener listener)
@@ -284,7 +285,7 @@ public class PinView extends HorizontalScrollView
 
             for (int i = 0; i < _numDigits; i++)
             {
-                DigitView digit = (DigitView) layout.getChildAt(i);
+                DigitView digit = (DigitView) layout.getChildAt(i + 1);
                 if (string.length() > i)
                 {
                     String mask = "•"; // Bullet
@@ -300,6 +301,8 @@ public class PinView extends HorizontalScrollView
                     if (i == length)
                     {
                         digit.setSelected(true);
+                        int width = getResources().getDisplayMetrics().widthPixels / 2;
+                        _pinView.smoothScrollTo((int)digit.getX() - width, (int)digit.getY());
                     }
                     else
                     {
