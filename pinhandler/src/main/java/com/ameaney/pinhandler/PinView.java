@@ -20,13 +20,14 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class PinView extends ViewGroup
+public class PinView extends HorizontalScrollView
 {
     public static class Defaults
     {
@@ -35,11 +36,9 @@ public class PinView extends ViewGroup
         public static final int DIGIT_WIDTH = 50;
         public static final int DIGIT_SPACING = 20;
         public static final int DIGIT_TEXT_SIZE = 15;
-        public static final int DIGIT_BACKGROUND_COLOR = Color.TRANSPARENT;
-        public static final int DIGIT_BORDER_COLOR = Color.BLACK;
-        public static final int DIGIT_ACCENT_COLOR = Color.MAGENTA;
+        public static final int DIGIT_BORDER_COLOR = Color.TRANSPARENT;
 
-        public static final int ACCENT_HEIGHT = 2;
+        public static final int ACCENT_HEIGHT = 5;
     }
 
     private int _numDigits;
@@ -52,6 +51,7 @@ public class PinView extends ViewGroup
     private int _digitBackgroundColor;
     private int _digitBorderColor;
     private int _digitAccentColor;
+    private int _digitTextColor;
     private int _accentHeight;
 
     private PinView _pinView;
@@ -73,6 +73,8 @@ public class PinView extends ViewGroup
     {
         super(context, attributeSet, defStyle);
 
+        this.setFillViewport(true);
+
         _pinView = this;
 
         TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.PinView);
@@ -88,15 +90,23 @@ public class PinView extends ViewGroup
         _digitSpacing = array.getDimensionPixelSize(R.styleable.PinView_digitSpacing, (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, Defaults.DIGIT_SPACING, metrics));
         _digitTextSize = array.getDimensionPixelSize(R.styleable.PinView_digitTextSize, (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, Defaults.DIGIT_TEXT_SIZE, metrics));
 
-        _digitBackgroundColor = array.getInt((R.styleable.PinView_digitBackgroundColor), Defaults.DIGIT_BACKGROUND_COLOR);
-        _digitBorderColor = array.getInt(R.styleable.PinView_digitBorderColor, Defaults.DIGIT_BORDER_COLOR);
+        _digitBorderColor = array.getColor(R.styleable.PinView_digitBorderColor, Defaults.DIGIT_BORDER_COLOR);
 
         Resources.Theme theme = context.getTheme();
 
-        TypedValue accentColor = new TypedValue();
-        theme.resolveAttribute(R.attr.colorAccent, accentColor, true);
+        TypedValue resolvedColor = new TypedValue();
+
+        theme.resolveAttribute(android.R.attr.textColorPrimary, resolvedColor, true);
+        _digitTextColor = array.getColor((R.styleable.PinView_digitTextColor),
+                resolvedColor.resourceId > 0 ? getResources().getColor(resolvedColor.resourceId) : resolvedColor.data);
+
+        theme.resolveAttribute(android.R.attr.windowBackground, resolvedColor, true);
+        _digitBackgroundColor = array.getColor((R.styleable.PinView_digitBackgroundColor),
+                resolvedColor.resourceId > 0 ? getResources().getColor(resolvedColor.resourceId) : resolvedColor.data);
+
+        theme.resolveAttribute(android.R.attr.colorAccent, resolvedColor, true);
         _digitAccentColor = array.getColor(R.styleable.PinView_digitAccentColor,
-                accentColor.resourceId > 0 ? getResources().getColor(accentColor.resourceId) : accentColor.data);
+                resolvedColor.resourceId > 0 ? getResources().getColor(resolvedColor.resourceId) : resolvedColor.data);
 
         _accentHeight = array.getDimensionPixelSize(R.styleable.PinView_accentHeight, (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, Defaults.ACCENT_HEIGHT, metrics));
         array.recycle();
@@ -108,40 +118,6 @@ public class PinView extends ViewGroup
     public boolean shouldDelayChildPressedState()
     {
         return false;
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
-    {
-        // Measure children
-        for (int i = 0; i < getChildCount(); i++)
-        {
-            getChildAt(i).measure(widthMeasureSpec, heightMeasureSpec);
-        }
-
-        // Calculate the size of the view
-        int width = (_digitWidth * _numDigits) + (_digitSpacing * (_numDigits - 1));
-        setMeasuredDimension(
-                width + getPaddingLeft() + getPaddingRight() + (_digitElevation * 2),
-                _digitHeight + getPaddingTop() + getPaddingBottom() + (_digitElevation * 2));
-    }
-
-    @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b)
-    {
-        for (int i = 0; i < _numDigits; i++)
-        {
-            View view = getChildAt(i);
-
-            int left = i * _digitWidth + i * _digitSpacing + getPaddingLeft() + _digitElevation;
-            int top = getPaddingTop() + _digitElevation / 2;
-            int right = left + _digitWidth;
-            int bottom = top + _digitHeight;
-            view.layout(left, top, right, bottom);
-        }
-
-        // Add the edit text as a 1px wide view to allow it to focus
-        getChildAt(_numDigits).layout(0, 0, 1, getMeasuredHeight());
     }
 
     @Override
@@ -163,13 +139,13 @@ public class PinView extends ViewGroup
 
     private Drawable getDrawable()
     {
-        ColorDrawable box = new ColorDrawable(Color.BLACK);
-        ColorDrawable background = new ColorDrawable(Color.RED);
-        ColorDrawable accent = new ColorDrawable(Color.BLUE);
+        ColorDrawable box = new ColorDrawable(_digitBorderColor);
+        ColorDrawable background = new ColorDrawable(_digitBackgroundColor);
+        ColorDrawable accent = new ColorDrawable(_digitAccentColor);
 
         LayerDrawable selectedBackground = new LayerDrawable(new Drawable[] { box, accent, background });
         selectedBackground.setLayerInset(1, 5, 5, 5, 5);
-        selectedBackground.setLayerInset(2, 5, 5, 5, 15);
+        selectedBackground.setLayerInset(2, 5, 5, 5, 5 + _accentHeight);
 
         LayerDrawable defaultBackground = new LayerDrawable(new Drawable[] { box, background });
         defaultBackground.setLayerInset(1, 5, 5, 5, 5);
@@ -188,29 +164,47 @@ public class PinView extends ViewGroup
 
         this.removeAllViews();
 
+        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        layoutParams.gravity = Gravity.CENTER;
+
+        LinearLayout layout = new LinearLayout(context);
+        layout.setLayoutParams(layoutParams);
+        layout.setGravity(Gravity.CENTER);
+        layout.setOrientation(LinearLayout.HORIZONTAL);
+
+        addView(layout);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        params.setMargins(_digitSpacing / 2, 0, _digitSpacing / 2, 0);
+        params.gravity = Gravity.CENTER;
+
         // Add a digit view for each digit
         for (int i = 0; i < _numDigits; i++)
         {
             TextView digitView = new DigitView(context);
+            digitView.setLayoutParams(params);
             digitView.setWidth(_digitWidth);
             digitView.setHeight(_digitHeight);
 
             digitView.setBackground(getDrawable());
 
-            //digitView.setTextColor(mDigitTextColor);
+            digitView.setTextColor(_digitTextColor);
             digitView.setTextSize(_digitTextSize);
             digitView.setGravity(Gravity.CENTER);
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             {
                 digitView.setElevation(_digitElevation);
             }
-            addView(digitView);
+
+            layout.addView(digitView);
         }
 
         Resources resources = getResources();
 
         // Add an "invisible" edit text to handle input
         _pinInputField = new EditText(context);
+        _pinInputField.setTextSize(1);
         _pinInputField.setBackgroundColor(resources.getColor(android.R.color.transparent));
         _pinInputField.setTextColor(resources.getColor(android.R.color.transparent));
         _pinInputField.setCursorVisible(false);
@@ -224,9 +218,11 @@ public class PinView extends ViewGroup
             {
                 // Update the selected state of the views
                 int length = _pinInputField.getText().length();
+                LinearLayout linearLayout = (LinearLayout) getChildAt(0);
+
                 for (int i = 0; i < _numDigits; i++)
                 {
-                    View view = getChildAt(i);
+                    View view = linearLayout.getChildAt(i);
                     if (view == null)
                     {
                         break;
@@ -245,7 +241,7 @@ public class PinView extends ViewGroup
             }
         });
         _pinInputField.addTextChangedListener(new PinWatcher());
-        addView(_pinInputField);
+        layout.addView(_pinInputField);
     }
 
     public void setOnPinFinishedListener(OnPinFinishedListener listener)
@@ -284,9 +280,11 @@ public class PinView extends ViewGroup
         public void afterTextChanged(Editable string)
         {
             int length = string.length();
+            LinearLayout layout = (LinearLayout) getChildAt(0);
+
             for (int i = 0; i < _numDigits; i++)
             {
-                DigitView digit = (DigitView) getChildAt(i);
+                DigitView digit = (DigitView) layout.getChildAt(i);
                 if (string.length() > i)
                 {
                     String mask = "•"; // Bullet
