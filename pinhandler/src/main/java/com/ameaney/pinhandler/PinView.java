@@ -5,18 +5,23 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.util.Pair;
 import android.util.TypedValue;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -58,6 +63,8 @@ public class PinView extends HorizontalScrollView
     private EditText _pinInputField;
 
     private OnPinFinishedListener _pinFinishedListener;
+
+    private Position _point;
 
     public PinView(Context context)
     {
@@ -115,24 +122,38 @@ public class PinView extends HorizontalScrollView
     }
 
     @Override
-    public boolean shouldDelayChildPressedState()
-    {
-        return false;
-    }
-
-    @Override
     public boolean onTouchEvent(MotionEvent event)
     {
         if (event.getAction() == MotionEvent.ACTION_DOWN)
         {
-            // Make sure this view is focused
-            _pinInputField.requestFocus();
+            _point = new Position(event.getX(), event.getY());
+        }
+        else if (event.getAction() == MotionEvent.ACTION_UP)
+        {
+            Position newPos = new Position(event.getX(), event.getY());
 
-            // Show keyboard
-            InputMethodManager inputMethodManager = (InputMethodManager) getContext()
-                    .getSystemService(Context.INPUT_METHOD_SERVICE);
-            inputMethodManager.showSoftInput(_pinInputField, 0);
-            return true;
+            double dist = _point.getDisplacement(newPos);
+
+            if (dist < 30)
+            {
+                // Make sure this view is focused
+                _pinInputField.requestFocus();
+
+                // Show keyboard
+                InputMethodManager inputMethodManager = (InputMethodManager) getContext()
+                        .getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputMethodManager.showSoftInput(_pinInputField, 0);
+                return true;
+            }
+        }
+        else if (event.getAction() == MotionEvent.ACTION_MOVE)
+        {
+            Position newPos = new Position(event.getX(), event.getY());
+            double dist = _point.getDisplacement(newPos);
+            if (dist > 30)
+            {
+                _point = new Position(-1, -1);
+            }
         }
         return super.onTouchEvent(event);
     }
@@ -160,7 +181,7 @@ public class PinView extends HorizontalScrollView
     @TargetApi(23)
     private void getViews()
     {
-        Context context = getContext();
+        final Context context = getContext();
 
         this.removeAllViews();
 
@@ -223,12 +244,17 @@ public class PinView extends HorizontalScrollView
 
                 for (int i = 0; i < _numDigits; i++)
                 {
-                    View view = linearLayout.getChildAt(i + 1);
+                    View view = linearLayout.getChildAt(i);
                     if (view == null)
                     {
                         break;
                     }
                     view.setSelected(hasFocus && length == i);
+
+                    if (view.isSelected())
+                    {
+                        centerSelectedDigit();
+                    }
                 }
 
                 // Make sure the cursor is at the end
@@ -242,12 +268,88 @@ public class PinView extends HorizontalScrollView
             }
         });
         _pinInputField.addTextChangedListener(new PinWatcher());
-        layout.addView(_pinInputField, 0);
+        layout.addView(_pinInputField);
     }
 
     public void setOnPinFinishedListener(OnPinFinishedListener listener)
     {
         _pinFinishedListener = listener;
+    }
+
+    private void centerSelectedDigit()
+    {
+        LinearLayout layout = (LinearLayout) getChildAt(0);
+        DigitView selected = null;
+        for (int i = 0; i < layout.getChildCount() - 1; i++)
+        {
+            selected = (DigitView) layout.getChildAt(i);
+            if (selected.isSelected())
+            {
+                break;
+            }
+            selected = null;
+        }
+
+        if (selected != null)
+        {
+            int width = getResources().getDisplayMetrics().widthPixels / 2;
+            _pinView.smoothScrollTo((int)selected.getX() - width, (int)selected.getY());
+        }
+    }
+
+    @Override
+    protected Parcelable onSaveInstanceState()
+    {
+        Parcelable parcelable = super.onSaveInstanceState();
+        PinSavedState state = new PinSavedState(parcelable);
+        state.pin = _pinInputField.getText().toString();
+        return state;
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state)
+    {
+        PinSavedState pinState = (PinSavedState) state;
+        super.onRestoreInstanceState(pinState.getSuperState());
+        _pinInputField.setText(pinState.pin);
+        _pinInputField.setSelection(pinState.pin.length());
+        centerSelectedDigit();
+    }
+
+    private class PinSavedState extends BaseSavedState
+    {
+        public String pin = "";
+
+        public final Parcelable.Creator<PinSavedState> CREATOR = new Parcelable.Creator<PinSavedState>()
+        {
+            @Override
+            public PinSavedState createFromParcel(Parcel in) {
+                return new PinSavedState(in);
+            }
+
+            @Override
+            public PinSavedState[] newArray(int size) {
+                return new PinSavedState[size];
+            }
+        };
+
+        public PinSavedState(Parcel source)
+        {
+            super(source);
+            pin = source.readString();
+        }
+
+        public PinSavedState(Parcelable superState)
+        {
+            super(superState);
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags)
+        {
+            super.writeToParcel(out, flags);
+            out.writeString(pin);
+        }
     }
 
     private class DigitView extends TextView
@@ -285,7 +387,7 @@ public class PinView extends HorizontalScrollView
 
             for (int i = 0; i < _numDigits; i++)
             {
-                DigitView digit = (DigitView) layout.getChildAt(i + 1);
+                DigitView digit = (DigitView) layout.getChildAt(i);
                 if (string.length() > i)
                 {
                     String mask = "•"; // Bullet
@@ -301,8 +403,7 @@ public class PinView extends HorizontalScrollView
                     if (i == length)
                     {
                         digit.setSelected(true);
-                        int width = getResources().getDisplayMetrics().widthPixels / 2;
-                        _pinView.smoothScrollTo((int)digit.getX() - width, (int)digit.getY());
+                        _pinView.centerSelectedDigit();
                     }
                     else
                     {
