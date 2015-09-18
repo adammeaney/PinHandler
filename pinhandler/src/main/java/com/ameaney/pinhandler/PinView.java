@@ -32,6 +32,9 @@ import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 public class PinView extends HorizontalScrollView
 {
     public static class Defaults
@@ -88,6 +91,9 @@ public class PinView extends HorizontalScrollView
 
         // Number of digits
         _numDigits = array.getInt(R.styleable.PinView_numDigits, Defaults.NUM_DIGITS);
+
+        // onPinFinishedListener
+        setPinListener(array.getString(R.styleable.PinView_onPinFinished));
 
         DisplayMetrics metrics = getResources().getDisplayMetrics();
 
@@ -274,6 +280,47 @@ public class PinView extends HorizontalScrollView
     public void setOnPinFinishedListener(OnPinFinishedListener listener)
     {
         _pinFinishedListener = listener;
+    }
+
+    private void setPinListener(final String methodName) throws IllegalStateException
+    {
+        if (methodName == null || methodName.isEmpty())
+        {
+            return;
+        }
+
+        setOnPinFinishedListener(new OnPinFinishedListener()
+        {
+            private Method handler = null;
+            @Override
+            public void pinEntered(String pin)
+            {
+                if (handler == null)
+                {
+                    try
+                    {
+                        handler = getContext().getClass().getMethod(methodName, String.class);
+                    }
+                    catch (NoSuchMethodException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                }
+
+                try
+                {
+                    handler.invoke(getContext(), pin);
+                }
+                catch (IllegalAccessException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+                catch (InvocationTargetException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            }
+        });
     }
 
     private void centerSelectedDigit()

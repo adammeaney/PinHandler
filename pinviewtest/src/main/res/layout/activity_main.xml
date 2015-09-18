@@ -13,6 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         app:digitBorderColor="@android:color/white"
-        app:numDigits="8"/>
+        app:numDigits="8"
+        app:onPinFinished="onPinFinished"/>
 
 </ScrollView>

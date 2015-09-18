@@ -18,14 +18,19 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         final PinView pinView = (PinView) findViewById(R.id.pinView);
-        pinView.setOnPinFinishedListener(new OnPinFinishedListener()
-        {
-            @Override
-            public void pinEntered(String pin)
-            {
-                Toast.makeText(pinView.getContext(), "Entered " + pin, Toast.LENGTH_SHORT).show();
-            }
-        });
+//        pinView.setOnPinFinishedListener(new OnPinFinishedListener()
+//        {
+//            @Override
+//            public void pinEntered(String pin)
+//            {
+//                Toast.makeText(pinView.getContext(), "Entered " + pin, Toast.LENGTH_SHORT).show();
+//            }
+//        });
+    }
+
+    public void onPinFinished(String pin)
+    {
+        Toast.makeText(this, "Entered " + pin, Toast.LENGTH_SHORT).show();
     }
 
     @Override

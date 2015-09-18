@@ -22,5 +22,7 @@
         <attr name="digitAccentColor" format="color" />
         <!-- Accent width, default 2dp -->
         <attr name="accentHeight" format="dimension" />
+        <!-- onPinFinished listener, default to empty -->
+        <attr name="onPinFinished" format="string" />
     </declare-styleable>
 </resources>
