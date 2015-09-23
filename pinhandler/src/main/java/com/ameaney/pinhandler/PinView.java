@@ -277,6 +277,11 @@ public class PinView extends HorizontalScrollView
         layout.addView(_pinInputField);
     }
 
+    public String getPin()
+    {
+        return _pinInputField.getText().toString();
+    }
+
     public void setOnPinFinishedListener(OnPinFinishedListener listener)
     {
         _pinFinishedListener = listener;
